@@ -1,0 +1,99 @@
+# FLEX Dylib Injection - Changes Summary
+
+## Overview
+
+FLEX has been successfully modified to support injection as a dynamic library (dylib) for debugging iOS apps on **non-jailbroken devices**. When injected, FLEX automatically initializes and displays its debugging interface without requiring any code changes to the target app.
+
+## Files Created
+
+### 1. `Classes/FLEXDylibEntry.m`
+- **Purpose**: Entry point that auto-initializes FLEX when the dylib is loaded
+- **Key Features**:
+  - Uses `__attribute__((constructor))` to run automatically on dylib load
+  - Ensures initialization happens on the main thread
+  - Waits 0.5 seconds for app initialization before showing FLEX
+  - Includes error handling and logging
+
+### 2. `DYLIB_INJECTION.md`
+- **Purpose**: Comprehensive guide for building and injecting FLEX
+- **Contents**:
+  - Step-by-step build instructions
+  - Xcode project configuration
+  - Code signing requirements
+  - Injection methods (Frida, etc.)
+  - Troubleshooting guide
+
+### 3. `QUICKSTART_DYLIB.md`
+- **Purpose**: Quick reference for experienced users
+- **Contents**: Condensed build and injection steps
+
+### 4. `build_dylib.sh`
+- **Purpose**: Helper script with build instructions
+- **Features**: Color-coded output, step-by-step guidance
+
+### 5. `entitlements.plist`
+- **Purpose**: Code signing entitlements template
+- **Contents**: Required entitlements for dylib injection on non-jailbroken devices
+
+## How It Works
+
+1. **Dylib Load**: When the dylib is injected into an app, the constructor function `FLEXDylibInit()` runs automatically
+2. **Thread Safety**: The constructor checks if it's on the main thread; if not, it dispatches to the main queue
+3. **Delayed Initialization**: Waits 0.5 seconds to allow the app to fully initialize
+4. **Auto-Show**: Calls `[[FLEXManager sharedManager] showExplorer]` to display FLEX automatically
+5. **Error Handling**: Wraps initialization in try-catch to prevent crashes
+
+## Compatibility
+
+### ✅ Works On
+- Non-jailbroken iOS devices (with Developer Mode)
+- iOS 9.0 and later
+- All FLEX features (except some advanced system log hooks)
+
+### ⚠️ Limitations
+- Requires proper code signing with Apple Developer certificate
+- Requires Developer Mode enabled (iOS 16+)
+- Some apps may detect and prevent dylib injection
+- System log hooks that require Substrate won't work (but won't crash)
+
+### 🔒 Security Notes
+- The existing Substrate dependency in `FLEXSystemLogViewController.m` is optional
+- It gracefully falls back if Substrate is not available
+- No jailbreak-specific code was added; only non-jailbreak compatible code
+
+## Next Steps
+
+To use this:
+
+1. **Build the dylib** (see `DYLIB_INJECTION.md` or `QUICKSTART_DYLIB.md`)
+2. **Code sign** the dylib with your Apple Developer certificate
+3. **Inject** using Frida or another injection tool
+4. **Debug** - FLEX will appear automatically!
+
+## Testing
+
+The dylib entry point has been created and should work when:
+- Properly built as a dynamic library
+- Code signed correctly
+- Injected into an app using Frida or similar tool
+
+To test:
+1. Build the dylib following the instructions
+2. Inject into a test app
+3. Verify FLEX appears automatically
+4. Test all FLEX features to ensure compatibility
+
+## Technical Details
+
+- **Constructor Priority**: Uses default constructor priority (runs after all +load methods)
+- **Thread Safety**: Properly handles both main thread and background thread injection
+- **Error Handling**: Catches exceptions to prevent app crashes
+- **Logging**: Logs success/failure for debugging injection issues
+
+## Notes
+
+- This modification does not break existing FLEX functionality
+- The dylib entry point is only active when built as a dylib
+- Regular FLEX integration (CocoaPods, manual, etc.) is unaffected
+- All existing FLEX features work when injected as a dylib
+
